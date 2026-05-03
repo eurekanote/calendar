@@ -213,7 +213,7 @@
 
         /* 移动端全屏优化 */
         @media (max-width: 600px) {
-            body { padding: 0; } /* 去掉 Body 边距 */
+            body { padding: 0; }
             .container { 
                 padding: 10px 0px; 
                 border-radius: 0; 
@@ -223,7 +223,7 @@
             .clocks-row { 
                 grid-template-columns: 1fr; 
                 gap: 10px; 
-                padding: 0 10px; /* 时钟保持一点边距好看 */
+                padding: 0 10px;
             }
             .time-val { font-size: 28px; }
             .calendar-container {
@@ -294,12 +294,14 @@
         hk: "https://ics.calendarlabs.com/581/34611917/Hkex_Market_Holidays.ics"
     };
 
+    // 默认备份数据，包含 2026 年调休休市安排
     const BACKUP_HOLIDAYS = {
         a: { "2026-05-01": "劳动节", "2026-05-04": "五一调休休市", "2026-05-05": "五一调休休市" },
         us: { "2026-05-25": "Memorial Day (阵亡将士纪念日)" },
         hk: { "2026-05-01": "劳动节", "2026-05-25": "佛诞" }
     };
 
+    // 统一使用 holidayMaps 变量名
     let holidayMaps = { 
         a: new Map(Object.entries(BACKUP_HOLIDAYS.a)),
         us: new Map(Object.entries(BACKUP_HOLIDAYS.us)), 
@@ -340,7 +342,13 @@
                 const response = await fetch(proxyUrl);
                 const text = await response.text();
                 const fetched = parseICS(text);
-                if (fetched.size > 0) holidayMaps[market] = fetched;
+                if (fetched.size > 0) {
+                    // 修复点：使用合并逻辑，而不是直接赋值覆盖 holidayMaps[market] = fetched;
+                    // 这样可以保留 BACKUP_HOLIDAYS 中的调休信息
+                    fetched.forEach((val, key) => {
+                        holidayMaps[market].set(key, val);
+                    });
+                }
             } catch (err) {
                 console.warn(`[SYNC WARNING] Failed to sync ${market}`);
             }
@@ -406,6 +414,7 @@
             const day = dateObj.getDay();
             const isWeekend = (day === 0 || day === 6);
 
+            // 修正点：全部使用 holidayMaps
             addMarketTag(cell, 'A股', !isWeekend && !holidayMaps.a.has(ymd), 'tag-a', ymd, holidayMaps.a.get(ymd), isWeekend);
             addMarketTag(cell, '港股', !isWeekend && !holidayMaps.hk.has(ymd), 'tag-h', ymd, holidayMaps.hk.get(ymd), isWeekend);
             addMarketTag(cell, '美股', !isWeekend && !holidayMaps.us.has(ymd), 'tag-u', ymd, holidayMaps.us.get(ymd), isWeekend);
