@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>全球股市实时看板 - GitHub 部署版</title>
+    <title>全球股市实时看板</title>
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/128/2773/2773285.png">
     <style>
         :root {
             --bg-color: #f2f2f7;
@@ -210,11 +211,29 @@
             text-align: right;
         }
 
+        /* 移动端全屏优化 */
         @media (max-width: 600px) {
-            .clocks-row { grid-template-columns: 1fr; }
-            .day-cell { min-height: 80px; padding: 4px; }
-            .time-val { font-size: 32px; }
-            .market-tag { font-size: 8px; letter-spacing: -0.5px; }
+            body { padding: 0; } /* 去掉 Body 边距 */
+            .container { 
+                padding: 10px 0px; 
+                border-radius: 0; 
+                box-shadow: none;
+                width: 100vw;
+            }
+            .clocks-row { 
+                grid-template-columns: 1fr; 
+                gap: 10px; 
+                padding: 0 10px; /* 时钟保持一点边距好看 */
+            }
+            .time-val { font-size: 28px; }
+            .calendar-container {
+                border-left: none;
+                border-right: none;
+                border-radius: 0;
+            }
+            .cal-header { padding: 10px 5px; justify-content: center; }
+            .day-cell { min-height: 85px; padding: 4px 2px; }
+            .market-tag { font-size: 8px; letter-spacing: -0.5px; padding: 1px 2px; }
             .weekday { font-size: 10px; }
         }
     </style>
