@@ -214,7 +214,7 @@
             text-align: right;
         }
 
-        /* 这是你最满意的那个版本的移动端全屏优化 CSS！ */
+        /* 移动端全屏优化 */
         @media (max-width: 600px) {
             body { padding: 0; }
             .container { 
@@ -226,7 +226,7 @@
             .clocks-row { 
                 grid-template-columns: 1fr; 
                 gap: 10px; 
-                padding: 0 10px; /* 时钟保持一点边距好看 */
+                padding: 0 10px;
             }
             .time-val { font-size: 28px; }
             .calendar-container {
@@ -291,10 +291,10 @@
 </div>
 
 <script>
-    // 离线支持 - Service Worker 注册 (使用内联 Blob 绕过外部文件需求)
+    // 离线支持 - Service Worker
     if ('serviceWorker' in navigator) {
         const swCode = `
-            const CACHE_NAME = 'market-v8';
+            const CACHE_NAME = 'market-v9';
             self.addEventListener('install', (e) => {
                 e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll([location.href])));
             });
@@ -321,21 +321,21 @@
     let holidayMaps = { a: new Map(), us: new Map(), hk: new Map() };
     const syncStatus = document.getElementById('sync-status');
 
-    // 优先从 LocalStorage 恢复数据 (实现数据缓存，秒开不空白)
+    // 优先从 LocalStorage 恢复数据
     function loadInitialData() {
         try {
-            const cached = localStorage.getItem('market_holidays_cache_v8');
+            const cached = localStorage.getItem('market_holidays_cache_v9');
             if (cached) {
                 const raw = JSON.parse(cached);
                 Object.keys(raw).forEach(m => holidayMaps[m] = new Map(Object.entries(raw[m])));
-                syncStatus.textContent = "已加载历史缓存数据";
+                syncStatus.textContent = "已从缓存加载";
             } else {
                 Object.keys(BACKUP_HOLIDAYS).forEach(m => holidayMaps[m] = new Map(Object.entries(BACKUP_HOLIDAYS[m])));
-                syncStatus.textContent = "使用内置预设数据";
+                syncStatus.textContent = "使用预设数据";
             }
         } catch(e) {
             Object.keys(BACKUP_HOLIDAYS).forEach(m => holidayMaps[m] = new Map(Object.entries(BACKUP_HOLIDAYS[m])));
-            syncStatus.textContent = "使用内置预设数据";
+            syncStatus.textContent = "准备就绪";
         }
     }
 
@@ -352,6 +352,10 @@
     function parseICS(text) {
         const holidays = new Map();
         const blocks = text.split('BEGIN:VEVENT');
+        
+        // 二十四节气列表（排除股市不休息的节气）
+        const solarTerms = ["立春","雨水","惊蛰","春分","谷雨","立夏","小满","芒种","夏至","小暑","大暑","立秋","处暑","白露","秋分","寒露","霜降","立冬","小雪","大雪","冬至","小寒","大寒"];
+
         blocks.forEach(block => {
             const startMatch = block.match(/DTSTART(?:;VALUE=DATE)?:(\d{8})/);
             const summaryMatch = block.match(/SUMMARY:(.*)/);
@@ -359,6 +363,10 @@
                 const d = startMatch[1];
                 const key = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
                 const summary = summaryMatch ? summaryMatch[1].trim() : "法定节假日";
+                
+                // 重点修复：过滤苹果日历中的民俗节气（如 5月21日的小满）
+                if (solarTerms.includes(summary)) return;
+
                 holidays.set(key, summary);
             }
         });
@@ -366,7 +374,7 @@
     }
 
     async function syncData() {
-        syncStatus.textContent = "正在检查云端更新...";
+        syncStatus.textContent = "检查更新中...";
         let anySuccess = false;
         
         for (const [market, url] of Object.entries(ICS_URLS)) {
@@ -376,26 +384,20 @@
                 const text = await response.text();
                 const fetched = parseICS(text);
                 if (fetched.size > 0) {
-                    // 合并数据，保留备份的调休记录
                     fetched.forEach((val, key) => holidayMaps[market].set(key, val));
                     anySuccess = true;
                 }
-            } catch (err) {
-                console.warn(`Failed to sync ${market}`);
-            }
+            } catch (err) {}
         }
 
         if (anySuccess) {
-            // 保存到 LocalStorage 实现持久化
             const toStore = {};
             Object.keys(holidayMaps).forEach(m => toStore[m] = Object.fromEntries(holidayMaps[m]));
-            localStorage.setItem('market_holidays_cache_v8', JSON.stringify(toStore));
+            localStorage.setItem('market_holidays_cache_v9', JSON.stringify(toStore));
             syncStatus.textContent = `云端同步成功 (${new Date().toLocaleTimeString()})`;
         } else {
-            syncStatus.textContent = "当前处于离线模式 (使用缓存数据)";
+            syncStatus.textContent = "离线模式 (历史缓存)";
         }
-        
-        // 数据更新完，强制刷新一次日历
         renderCalendar();
     }
 
@@ -503,14 +505,13 @@
         if (event.target == overlay) closeModal();
     }
 
-    // 核心执行顺序：先加载本地缓存 -> 初始化 UI -> 瞬间渲染日历 -> 最后异步更新网络
     loadInitialData();
     initControls();
     updateClocks();
     renderCalendar();
 
     setInterval(updateClocks, 1000);
-    syncData(); // 后台静默同步
+    syncData();
 </script>
 
 </body>
