@@ -36,18 +36,18 @@
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
+            padding: 15px; /* 恢复 Body 边距 */
             display: flex;
             justify-content: center;
-            overflow-x: hidden;
         }
 
         .container {
             width: 100%;
             max-width: 1000px;
             background: var(--card-bg);
-            min-height: 100vh;
-            padding: 20px 0;
-            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+            border-radius: 20px; /* 恢复容器圆角 */
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         }
 
         .header {
@@ -55,21 +55,19 @@
             justify-content: center;
             align-items: center;
             margin-bottom: 20px;
-            padding: 0 15px;
         }
-        .header h1 { font-size: 22px; font-weight: 700; color: var(--apple-blue); }
+        .header h1 { font-size: 20px; font-weight: 600; color: var(--apple-blue); }
 
         .clocks-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 12px;
+            gap: 15px;
             margin-bottom: 25px;
-            padding: 0 15px;
         }
         .clock-card {
             background: #fbfbfd;
             border-radius: 16px;
-            padding: 18px 10px;
+            padding: 15px;
             text-align: center;
             border: 1px solid var(--border-color);
         }
@@ -77,17 +75,20 @@
             font-family: "SF Mono", "Courier New", monospace;
             font-size: 32px;
             font-weight: 700;
-            margin: 4px 0;
+            margin: 5px 0;
             letter-spacing: -1px;
         }
         .date-val { font-size: 13px; color: var(--text-sub); }
 
+        /* 日历控制 */
         .calendar-container {
-            border-top: 1px solid var(--border-color);
-            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            overflow: hidden;
         }
         .cal-header {
-            padding: 15px;
+            padding: 12px 15px;
+            background: #fff;
             border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
@@ -95,12 +96,13 @@
             flex-wrap: wrap;
             gap: 10px;
         }
-        .cal-controls { display: flex; align-items: center; gap: 8px; }
+        .cal-controls { display: flex; align-items: center; gap: 6px; }
         .cal-select, .cal-btn {
+            appearance: none;
             background-color: #f2f2f7;
             border: none;
-            padding: 8px 12px;
-            border-radius: 10px;
+            padding: 6px 10px;
+            border-radius: 8px;
             font-size: 14px;
             font-weight: 600;
             color: var(--apple-blue);
@@ -116,7 +118,7 @@
         }
         .weekday {
             background: #f9f9fb;
-            padding: 10px 0;
+            padding: 8px 0;
             text-align: center;
             font-size: 11px;
             font-weight: 600;
@@ -124,28 +126,31 @@
         }
         .day-cell {
             background: #fff;
-            min-height: 105px;
-            padding: 6px 4px;
+            min-height: 100px;
+            padding: 6px;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 3px;
         }
-        .day-num { font-size: 14px; font-weight: 600; }
+        .day-num { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
         .today .day-num {
             color: #fff;
             background: var(--apple-red);
-            width: 24px; height: 24px;
-            display: flex; align-items: center; justify-content: center;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 50%;
         }
-        .other-month { background: #fafafa; color: #d1d1d6; }
-        .other-month .market-tag { opacity: 0.2; }
+        .other-month { color: #d1d1d6; }
+        .other-month .market-tag { opacity: 0.3; }
 
         .market-tag {
             font-size: 9px;
-            font-weight: 700;
-            padding: 3px 4px;
-            border-radius: 5px;
+            font-weight: 600;
+            padding: 2px 4px;
+            border-radius: 4px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -154,67 +159,74 @@
         .tag-a { background-color: var(--tag-a-bg); color: white; }
         .tag-h { background-color: var(--tag-h-bg); color: white; }
         .tag-u { background-color: var(--tag-u-bg); color: white; }
-        .tag-closed { background-color: var(--tag-closed-bg); color: var(--tag-closed-text); }
+        .tag-closed {
+            background-color: var(--tag-closed-bg);
+            color: var(--tag-closed-text);
+        }
 
         .info-icon {
             display: inline-flex;
-            width: 13px; height: 13px;
-            background: rgba(0,0,0,0.1);
+            width: 12px;
+            height: 12px;
+            background: rgba(0,0,0,0.08);
             color: #666;
             border-radius: 50%;
-            justify-content: center; align-items: center;
-            font-size: 9px;
+            justify-content: center;
+            align-items: center;
+            margin-left: 2px;
             cursor: pointer;
+            font-size: 8px;
         }
 
-        /* 弹窗设计 */
+        /* 弹窗样式 */
         #modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.3);
+            background: rgba(0,0,0,0.4);
             display: none;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(4px);
         }
         #modal {
-            background: rgba(255,255,255,0.9);
-            padding: 25px;
-            border-radius: 20px;
-            width: 80%;
-            max-width: 300px;
+            background: #fff;
+            padding: 24px;
+            border-radius: 18px;
+            max-width: 280px;
+            width: 85%;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
         }
-        #modal h3 { font-size: 18px; margin-bottom: 10px; }
-        #modal p { font-size: 14px; color: #333; margin-bottom: 20px; }
+        #modal h3 { font-size: 17px; margin-bottom: 10px; color: var(--apple-blue); }
+        #modal p { font-size: 13px; color: #666; margin-bottom: 18px; line-height: 1.5; }
         .modal-btn {
             background: var(--apple-blue);
-            color: #fff; border: none;
-            padding: 12px; width: 100%;
-            border-radius: 12px; font-weight: 600;
+            color: #fff;
+            border: none;
+            padding: 8px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            width: 100%;
         }
 
         .sync-info {
-            padding: 15px;
+            margin-top: 12px;
             font-size: 10px;
             color: var(--text-sub);
             text-align: right;
         }
 
-        /* 手机端全屏极致优化 */
+        /* 移动端样式恢复：保留适当边距，更美观 */
         @media (max-width: 600px) {
-            body { padding: 0; }
-            .container { 
-                padding: 10px 0; 
-                border-radius: 0; 
-                width: 100vw;
+            .clocks-row { 
+                grid-template-columns: 1fr; 
+                gap: 10px; 
             }
-            .clocks-row { grid-template-columns: 1fr; padding: 0 10px; }
             .time-val { font-size: 28px; }
-            .day-cell { min-height: 90px; }
+            .day-cell { min-height: 85px; padding: 4px 2px; }
+            .market-tag { font-size: 8px; letter-spacing: -0.5px; padding: 1px 2px; }
+            .weekday { font-size: 10px; }
         }
     </style>
 </head>
@@ -257,12 +269,11 @@
     <div class="sync-info" id="sync-status">正在初始化...</div>
 </div>
 
-<!-- 详情弹窗 -->
 <div id="modal-overlay">
     <div id="modal">
         <h3 id="modal-title">休市详情</h3>
         <p id="modal-desc"></p>
-        <button class="modal-btn" onclick="closeModal()">好</button>
+        <button class="modal-btn" onclick="closeModal()">我知道了</button>
     </div>
 </div>
 
@@ -270,7 +281,7 @@
     // 离线支持 - Service Worker
     if ('serviceWorker' in navigator) {
         const sw = `
-            const CACHE_NAME = 'market-v6';
+            const CACHE_NAME = 'market-v7';
             self.addEventListener('install', e => {
                 self.skipWaiting();
                 e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll([location.href])));
@@ -287,10 +298,9 @@
         hk: "https://ics.calendarlabs.com/581/34611917/Hkex_Market_Holidays.ics"
     };
 
-    // 核心备份数据：包含 2026 年关键调休安排
     const BACKUP_HOLIDAYS = {
         a: { "2026-05-01": "劳动节", "2026-05-04": "证券市场调休休市", "2026-05-05": "证券市场调休休市" },
-        us: { "2026-05-25": "Memorial Day (阵亡将士纪念日)" },
+        us: { "2026-05-25": "Memorial Day" },
         hk: { "2026-05-01": "劳动节", "2026-05-25": "佛诞" }
     };
 
@@ -323,10 +333,9 @@
         return holidays;
     }
 
-    // 1. 初始加载逻辑
     function loadInitialData() {
         try {
-            const cachedStr = localStorage.getItem('market_data_v6');
+            const cachedStr = localStorage.getItem('market_data_v7');
             if (cachedStr) {
                 const raw = JSON.parse(cachedStr);
                 Object.keys(raw).forEach(k => holidayMaps[k] = new Map(Object.entries(raw[k])));
@@ -337,23 +346,20 @@
             }
         } catch(e) {
             Object.keys(BACKUP_HOLIDAYS).forEach(k => holidayMaps[k] = new Map(Object.entries(BACKUP_HOLIDAYS[k])));
-            syncStatus.textContent = "准备就绪";
+            syncStatus.textContent = "数据就绪";
         }
     }
 
-    // 2. 异步同步逻辑
     async function syncData() {
         let anySuccess = false;
-        syncStatus.textContent = "正在检查云端更新...";
+        syncStatus.textContent = "正在检查更新...";
         
         for (const [market, url] of Object.entries(ICS_URLS)) {
             try {
                 const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
                 const response = await fetch(proxyUrl, { cache: "no-store" });
-                if (!response.ok) throw new Error();
                 const fetched = parseICS(await response.text());
                 if (fetched.size > 0) {
-                    // 合并而非覆盖，保留预设的调休安排
                     fetched.forEach((val, key) => holidayMaps[market].set(key, val));
                     anySuccess = true;
                 }
@@ -363,12 +369,12 @@
         if (anySuccess) {
             const st = {};
             Object.keys(holidayMaps).forEach(k => st[k] = Object.fromEntries(holidayMaps[k]));
-            localStorage.setItem('market_data_v6', JSON.stringify(st));
-            syncStatus.textContent = `已同步最新数据 (${new Date().toLocaleTimeString()})`;
+            localStorage.setItem('market_data_v7', JSON.stringify(st));
+            syncStatus.textContent = `同步成功 (${new Date().toLocaleTimeString()})`;
         } else {
             syncStatus.textContent = "离线模式 (使用缓存数据)";
         }
-        renderCalendar(); // 同步完刷新日历
+        renderCalendar();
     }
 
     function updateClocks() {
@@ -427,7 +433,7 @@
         tag.textContent = `${name}${isOpen ? '开盘' : '休市'}`;
         if (!isOpen) {
             const i = document.createElement('span'); i.className = 'info-icon'; i.textContent = '?';
-            const finalReason = isW ? "周末休市" : (reason || "法定节假日休市");
+            const finalReason = isW ? "周末休市" : (reason || "节假日休市");
             i.onclick = (e) => { e.stopPropagation(); openModal(`${name} ${date}`, finalReason); };
             tag.appendChild(i);
         }
@@ -442,14 +448,13 @@
     function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
     window.onclick = e => { if (e.target == document.getElementById('modal-overlay')) closeModal(); };
 
-    // --- 启动顺序控制 ---
-    initControls();      // 1. 初始化下拉框
-    loadInitialData();   // 2. 加载本地/预设数据
-    updateClocks();      // 3. 初始显示时钟
-    renderCalendar();    // 4. *** 立即渲染日历（解决空白问题） ***
+    initControls();
+    loadInitialData();
+    updateClocks();
+    renderCalendar();
 
-    setInterval(updateClocks, 1000); // 5. 开始读秒
-    syncData();         // 6. 后台执行同步
+    setInterval(updateClocks, 1000);
+    syncData();
 </script>
 
 </body>
