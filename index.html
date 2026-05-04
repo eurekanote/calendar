@@ -294,7 +294,7 @@
     // 离线支持
     if ('serviceWorker' in navigator) {
         const swCode = `
-            const CACHE_NAME = 'market-v12';
+            const CACHE_NAME = 'market-v13';
             self.addEventListener('install', (e) => {
                 self.skipWaiting();
                 e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll([location.href])));
@@ -313,7 +313,7 @@
         hk: "https://ics.calendarlabs.com/581/34611917/Hkex_Market_Holidays.ics"
     };
 
-    // 核心备份数据：仅作为基础补充
+    // 基础补丁：依然保留最核心的调休定义，作为最后的防线
     const BACKUP_HOLIDAYS = {
         a: { "2026-05-01": "劳动节", "2026-05-04": "劳动节假期", "2026-05-05": "劳动节假期" },
         us: { "2026-05-25": "Memorial Day" },
@@ -331,13 +331,13 @@
         });
 
         try {
-            const cached = localStorage.getItem('market_holidays_cache_v12');
+            const cached = localStorage.getItem('market_holidays_cache_v13');
             if (cached) {
                 const raw = JSON.parse(cached);
                 Object.keys(raw).forEach(m => {
                     Object.entries(raw[m]).forEach(([d, obj]) => holidayMaps[m].set(d, obj));
                 });
-                syncStatus.textContent = "已就绪 (离线模式)";
+                syncStatus.textContent = "已加载离线数据";
             }
         } catch(e) {}
     }
@@ -352,16 +352,13 @@
         return `${y}-${m}-${d}`;
     }
 
-    // 改进的语义识别方法
-    function parseICS(text) {
+    // 智能语义识别逻辑：不再掩耳盗铃，而是“读懂”日历
+    function parseICS(text, market) {
         const data = new Map();
         const blocks = text.split('BEGIN:VEVENT');
         
-        // 扩展过滤名单：包含二十四节气和不影响开市的民俗节日
-        const excludeList = [
-            "立春","雨水","惊蛰","春分","谷雨","立夏","小满","芒种","夏至","小暑","大暑","立秋","处暑","白露","秋分","寒露","霜降","立冬","小雪","大雪","冬至","小寒","大寒",
-            "七夕", "重阳", "腊八", "寒衣", "中元", "元宵", "龙抬头", "妇女节", "青年节", "教师节", "建军节", "植树节", "记者节"
-        ];
+        // 核心法定假期准入词（白名单）
+        const cnLegalKeywords = ["元旦", "春节", "清明", "劳动", "五一", "端午", "中秋", "国庆"];
 
         blocks.forEach(block => {
             const startMatch = block.match(/DTSTART(?:;VALUE=DATE)?:(\d{8})/);
@@ -371,32 +368,40 @@
                 const d = startMatch[1];
                 const key = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
                 let summary = summaryMatch[1].trim();
-                
-                // 1. 过滤节气及民俗节日 (如 8月19日的七夕)
-                if (excludeList.some(term => summary.includes(term)) && !summary.includes("清明")) return;
-                
-                // 2. 识别“调休上班” -> 强制开盘
-                if (summary.includes("上班") || summary.includes("工作日") || summary.includes("补班")) {
-                    data.set(key, { status: "OPEN", reason: summary });
-                    return;
-                }
 
-                // 3. 其余判定为“休市”
-                data.set(key, { status: "CLOSED", reason: summary });
+                if (market === 'a') {
+                    // --- A 股专用智能过滤逻辑 ---
+                    
+                    // 1. 识别“调休上班” -> 强制开盘（优先级最高）
+                    if (summary.includes("上班") || summary.includes("工作日") || summary.includes("补班")) {
+                        data.set(key, { status: "OPEN", reason: summary });
+                        return;
+                    }
+
+                    // 2. 法定假期判定：只有属于白名单的大节才算休市
+                    const isLegalHoliday = cnLegalKeywords.some(kw => summary.includes(kword = kw));
+                    if (isLegalHoliday) {
+                        data.set(key, { status: "CLOSED", reason: summary });
+                    }
+                    // 3. 所有其他节日（七夕、小满、重阳、教师节等）会被自动忽略，默认开盘
+                } else {
+                    // --- 美股/港股逻辑：专业日历，直接信任 ---
+                    data.set(key, { status: "CLOSED", reason: summary });
+                }
             }
         });
         return data;
     }
 
     async function syncData() {
-        syncStatus.textContent = "同步中...";
+        syncStatus.textContent = "检查更新...";
         let anySuccess = false;
         
         for (const [market, url] of Object.entries(ICS_URLS)) {
             try {
                 const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
                 const response = await fetch(proxyUrl, { cache: "no-store" });
-                const fetched = parseICS(await response.text());
+                const fetched = parseICS(await response.text(), market);
                 if (fetched.size > 0) {
                     fetched.forEach((obj, key) => holidayMaps[market].set(key, obj));
                     anySuccess = true;
@@ -407,10 +412,10 @@
         if (anySuccess) {
             const toStore = {};
             Object.keys(holidayMaps).forEach(k => toStore[k] = Object.fromEntries(holidayMaps[k]));
-            localStorage.setItem('market_holidays_cache_v12', JSON.stringify(toStore));
+            localStorage.setItem('market_holidays_cache_v13', JSON.stringify(toStore));
             syncStatus.textContent = `同步成功 (${new Date().toLocaleTimeString()})`;
         } else {
-            syncStatus.textContent = "当前离线 (使用缓存)";
+            syncStatus.textContent = "当前离线 (数据基于缓存)";
         }
         renderCalendar();
     }
@@ -470,9 +475,10 @@
 
                 if (record) {
                     if (record.status === "OPEN") {
-                        isOpen = true;
+                        isOpen = true; // 强制开盘（调休补班）
+                        reason = "";
                     } else {
-                        isOpen = false;
+                        isOpen = false; // 法定休市
                         reason = record.reason;
                     }
                 }
