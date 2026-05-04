@@ -22,9 +22,9 @@
             --border-color: #e5e5ea;
             
             /* 三色底色 */
-            --tag-a-bg: #6366f1; /* A股紫色 */
-            --tag-h-bg: #f59e0b; /* 港股橙色 */
-            --tag-u-bg: #10b981; /* 美股绿色 */
+            --tag-a-bg: #6366f1; 
+            --tag-h-bg: #f59e0b; 
+            --tag-u-bg: #10b981; 
             --tag-closed-bg: #e5e5ea;
             --tag-closed-text: #8e8e93;
         }
@@ -291,11 +291,12 @@
 </div>
 
 <script>
-    // 离线支持 - Service Worker
+    // 离线支持
     if ('serviceWorker' in navigator) {
         const swCode = `
-            const CACHE_NAME = 'market-v9';
+            const CACHE_NAME = 'market-v10';
             self.addEventListener('install', (e) => {
+                self.skipWaiting();
                 e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll([location.href])));
             });
             self.addEventListener('fetch', (e) => {
@@ -312,6 +313,7 @@
         hk: "https://ics.calendarlabs.com/581/34611917/Hkex_Market_Holidays.ics"
     };
 
+    // 核心备份数据：不仅是兜底，更是作为最高优先级的“地基”
     const BACKUP_HOLIDAYS = {
         a: { "2026-05-01": "劳动节", "2026-05-04": "五一调休休市", "2026-05-05": "五一调休休市" },
         us: { "2026-05-25": "Memorial Day (阵亡将士纪念日)" },
@@ -321,21 +323,27 @@
     let holidayMaps = { a: new Map(), us: new Map(), hk: new Map() };
     const syncStatus = document.getElementById('sync-status');
 
-    // 优先从 LocalStorage 恢复数据
+    // 初始加载逻辑：合并数据而非替换
     function loadInitialData() {
+        // 第一步：先打好“地基”，填入所有预设的调休安排
+        Object.keys(BACKUP_HOLIDAYS).forEach(m => {
+            holidayMaps[m] = new Map(Object.entries(BACKUP_HOLIDAYS[m]));
+        });
+
         try {
-            const cached = localStorage.getItem('market_holidays_cache_v9');
+            const cached = localStorage.getItem('market_holidays_cache_v10');
             if (cached) {
                 const raw = JSON.parse(cached);
-                Object.keys(raw).forEach(m => holidayMaps[m] = new Map(Object.entries(raw[m])));
-                syncStatus.textContent = "已从缓存加载";
+                // 第二步：将缓存数据“叠”上去，而不是直接覆盖地基
+                Object.keys(raw).forEach(m => {
+                    Object.entries(raw[m]).forEach(([d, s]) => holidayMaps[m].set(d, s));
+                });
+                syncStatus.textContent = "已就绪 (历史模式)";
             } else {
-                Object.keys(BACKUP_HOLIDAYS).forEach(m => holidayMaps[m] = new Map(Object.entries(BACKUP_HOLIDAYS[m])));
-                syncStatus.textContent = "使用预设数据";
+                syncStatus.textContent = "数据就绪";
             }
         } catch(e) {
-            Object.keys(BACKUP_HOLIDAYS).forEach(m => holidayMaps[m] = new Map(Object.entries(BACKUP_HOLIDAYS[m])));
-            syncStatus.textContent = "准备就绪";
+            syncStatus.textContent = "运行中";
         }
     }
 
@@ -353,19 +361,23 @@
         const holidays = new Map();
         const blocks = text.split('BEGIN:VEVENT');
         
-        // 二十四节气列表（排除股市不休息的节气）
         const solarTerms = ["立春","雨水","惊蛰","春分","谷雨","立夏","小满","芒种","夏至","小暑","大暑","立秋","处暑","白露","秋分","寒露","霜降","立冬","小雪","大雪","冬至","小寒","大寒"];
 
         blocks.forEach(block => {
             const startMatch = block.match(/DTSTART(?:;VALUE=DATE)?:(\d{8})/);
-            const summaryMatch = block.match(/SUMMARY:(.*)/);
+            // 增强的 Summary 正则，过滤掉复杂的参数
+            const summaryMatch = block.match(/SUMMARY(?:;[^:]*)?:(.*)/i);
+            
             if (startMatch) {
                 const d = startMatch[1];
                 const key = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
                 const summary = summaryMatch ? summaryMatch[1].trim() : "法定节假日";
                 
-                // 重点修复：过滤苹果日历中的民俗节气（如 5月21日的小满）
-                if (solarTerms.includes(summary)) return;
+                // 过滤 1：排除非清明的纯节气
+                if (solarTerms.some(term => summary.includes(term)) && !summary.includes("清明")) return;
+                
+                // 过滤 2：排除调休上班（补班日不应标记为休市）
+                if (summary.includes("上班") || summary.includes("工作日") || summary.includes("补班")) return;
 
                 holidays.set(key, summary);
             }
@@ -374,7 +386,7 @@
     }
 
     async function syncData() {
-        syncStatus.textContent = "检查更新中...";
+        syncStatus.textContent = "检查更新...";
         let anySuccess = false;
         
         for (const [market, url] of Object.entries(ICS_URLS)) {
@@ -384,6 +396,7 @@
                 const text = await response.text();
                 const fetched = parseICS(text);
                 if (fetched.size > 0) {
+                    // 合并数据
                     fetched.forEach((val, key) => holidayMaps[market].set(key, val));
                     anySuccess = true;
                 }
@@ -393,10 +406,10 @@
         if (anySuccess) {
             const toStore = {};
             Object.keys(holidayMaps).forEach(m => toStore[m] = Object.fromEntries(holidayMaps[m]));
-            localStorage.setItem('market_holidays_cache_v9', JSON.stringify(toStore));
-            syncStatus.textContent = `云端同步成功 (${new Date().toLocaleTimeString()})`;
+            localStorage.setItem('market_holidays_cache_v10', JSON.stringify(toStore));
+            syncStatus.textContent = `已同步最新数据 (${new Date().toLocaleTimeString()})`;
         } else {
-            syncStatus.textContent = "离线模式 (历史缓存)";
+            syncStatus.textContent = "当前离线 (数据基于缓存)";
         }
         renderCalendar();
     }
@@ -505,6 +518,7 @@
         if (event.target == overlay) closeModal();
     }
 
+    // 执行顺序：1.加载地基(备份)+合并缓存 -> 2.初始化UI -> 3.初次渲染(保证秒开不空白) -> 4.异步后台同步
     loadInitialData();
     initControls();
     updateClocks();
