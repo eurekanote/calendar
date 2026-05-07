@@ -2,12 +2,12 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>开盘看板日历</title>
-    <!-- PWA / 移动端桌面化配置 -->
+    <!-- PWA 配置 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="开盘看板日历">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="开盘日历">
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/128/9014/9014576.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/128/9014/9014576.png">
     
@@ -17,11 +17,10 @@
             --card-bg: #ffffff;
             --apple-blue: #007aff;
             --apple-red: #ff3b30;
+            --apple-orange: #ff9500; /* 半日市颜色 */
             --text-main: #1c1c1e;
             --text-sub: #8e8e93;
             --border-color: #e5e5ea;
-            
-            /* 三色底色 */
             --tag-a-bg: #6366f1; 
             --tag-h-bg: #f59e0b; 
             --tag-u-bg: #10b981; 
@@ -29,7 +28,7 @@
             --tag-closed-text: #8e8e93;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
@@ -55,38 +54,38 @@
             align-items: center;
             margin-bottom: 20px;
         }
-        .header h1 { font-size: 20px; font-weight: 600; color: var(--apple-blue); }
+        .header h1 { font-size: 20px; font-weight: 700; color: var(--apple-blue); }
 
         .clocks-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 12px;
             margin-bottom: 25px;
         }
         .clock-card {
             background: #fbfbfd;
             border-radius: 16px;
-            padding: 15px;
+            padding: 18px 10px;
             text-align: center;
             border: 1px solid var(--border-color);
         }
         .time-val {
             font-family: "SF Mono", "Courier New", monospace;
-            font-size: 32px;
+            font-size: 30px;
             font-weight: 700;
-            margin: 5px 0;
+            margin: 4px 0;
             letter-spacing: -1px;
         }
-        .date-val { font-size: 13px; color: var(--text-sub); }
+        .date-val { font-size: 12px; color: var(--text-sub); }
 
         .calendar-container {
             border: 1px solid var(--border-color);
             border-radius: 14px;
             overflow: hidden;
+            background: #fff;
         }
         .cal-header {
             padding: 12px 15px;
-            background: #fff;
             border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
@@ -94,17 +93,15 @@
             flex-wrap: wrap;
             gap: 10px;
         }
-        .cal-controls { display: flex; align-items: center; gap: 6px; }
+        .cal-controls { display: flex; align-items: center; gap: 8px; }
         .cal-select, .cal-btn {
-            appearance: none;
             background-color: #f2f2f7;
             border: none;
-            padding: 6px 10px;
+            padding: 8px 12px;
             border-radius: 8px;
             font-size: 14px;
             font-weight: 600;
             color: var(--apple-blue);
-            cursor: pointer;
             outline: none;
         }
 
@@ -116,7 +113,7 @@
         }
         .weekday {
             background: #f9f9fb;
-            padding: 8px 0;
+            padding: 10px 0;
             text-align: center;
             font-size: 11px;
             font-weight: 600;
@@ -125,30 +122,27 @@
         .day-cell {
             background: #fff;
             min-height: 100px;
-            padding: 6px;
+            padding: 6px 4px;
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 4px;
         }
-        .day-num { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+        .day-num { font-size: 14px; font-weight: 600; }
         .today .day-num {
             color: #fff;
             background: var(--apple-red);
-            width: 20px;
-            height: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 22px; height: 22px;
+            display: flex; align-items: center; justify-content: center;
             border-radius: 50%;
         }
         .other-month { color: #d1d1d6; }
-        .other-month .market-tag { opacity: 0.3; }
+        .other-month .market-tag { opacity: 0.2; }
 
         .market-tag {
             font-size: 9px;
-            font-weight: 600;
-            padding: 2px 4px;
-            border-radius: 4px;
+            font-weight: 700;
+            padding: 3px 4px;
+            border-radius: 5px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -157,87 +151,58 @@
         .tag-a { background-color: var(--tag-a-bg); color: white; }
         .tag-h { background-color: var(--tag-h-bg); color: white; }
         .tag-u { background-color: var(--tag-u-bg); color: white; }
-        .tag-closed {
-            background-color: var(--tag-closed-bg);
-            color: var(--tag-closed-text);
-        }
+        .tag-half { background-color: var(--apple-orange); color: white; } /* 半日市标签 */
+        .tag-closed { background-color: var(--tag-closed-bg); color: var(--tag-closed-text); }
 
         .info-icon {
             display: inline-flex;
-            width: 12px;
-            height: 12px;
-            background: rgba(0,0,0,0.08);
+            width: 12px; height: 12px;
+            background: rgba(0,0,0,0.1);
             color: #666;
             border-radius: 50%;
-            justify-content: center;
-            align-items: center;
-            margin-left: 2px;
-            cursor: pointer;
+            justify-content: center; align-items: center;
             font-size: 8px;
+            cursor: pointer;
         }
 
         #modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.4);
+            background: rgba(0,0,0,0.3);
             display: none;
-            justify-content: center;
-            align-items: center;
+            justify-content: center; align-items: center;
             z-index: 1000;
-            backdrop-filter: blur(4px);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
         #modal {
             background: #fff;
-            padding: 24px;
-            border-radius: 18px;
-            max-width: 280px;
-            width: 85%;
+            padding: 25px;
+            border-radius: 20px;
+            width: 80%;
+            max-width: 300px;
             text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
         }
-        #modal h3 { font-size: 17px; margin-bottom: 10px; color: var(--apple-blue); }
-        #modal p { font-size: 13px; color: #666; margin-bottom: 18px; line-height: 1.5; }
         .modal-btn {
             background: var(--apple-blue);
-            color: #fff;
-            border: none;
-            padding: 8px 25px;
-            border-radius: 8px;
-            font-weight: 600;
-            width: 100%;
+            color: #fff; border: none;
+            padding: 12px; width: 100%;
+            border-radius: 12px; font-weight: 600; margin-top: 15px;
         }
 
         .sync-info {
-            margin-top: 12px;
+            margin-top: 15px;
             font-size: 10px;
             color: var(--text-sub);
             text-align: right;
         }
 
-        /* 移动端全屏优化 */
         @media (max-width: 600px) {
             body { padding: 0; }
-            .container { 
-                padding: 10px 0px; 
-                border-radius: 0; 
-                box-shadow: none;
-                width: 100vw;
-            }
-            .clocks-row { 
-                grid-template-columns: 1fr; 
-                gap: 10px; 
-                padding: 0 10px;
-            }
-            .time-val { font-size: 28px; }
-            .calendar-container {
-                border-left: none;
-                border-right: none;
-                border-radius: 0;
-            }
-            .cal-header { padding: 10px 5px; justify-content: center; }
-            .day-cell { min-height: 85px; padding: 4px 2px; }
-            .market-tag { font-size: 8px; letter-spacing: -0.5px; padding: 1px 2px; }
-            .weekday { font-size: 10px; }
+            .container { padding: 15px 0; border-radius: 0; width: 100vw; box-shadow: none; }
+            .clocks-row { grid-template-columns: 1fr; padding: 0 15px; }
+            .calendar-container { border-radius: 0; border-left: none; border-right: none; }
+            .day-cell { min-height: 90px; }
         }
     </style>
 </head>
@@ -252,12 +217,12 @@
         <div class="clock-card">
             <div class="date-val">北京时间 (CST)</div>
             <div id="cn-time" class="time-val">00:00:00</div>
-            <div id="cn-date" class="date-val">正在加载...</div>
+            <div id="cn-date" class="date-val">正在同步...</div>
         </div>
         <div class="clock-card">
             <div class="date-val">美东时间 (EST/EDT)</div>
             <div id="us-time" class="time-val">00:00:00</div>
-            <div id="us-date" class="date-val">正在加载...</div>
+            <div id="us-date" class="date-val">正在同步...</div>
         </div>
     </div>
 
@@ -268,9 +233,7 @@
                 <select id="month-select" class="cal-select"></select>
                 <button id="today-btn" class="cal-btn">今天</button>
             </div>
-            <div style="font-size: 11px; color: var(--text-sub);">
-                彩色：开盘 · 灰色：休市
-            </div>
+            <div style="font-size: 11px; color: var(--text-sub);">橙色表示提前收盘</div>
         </div>
         <div class="cal-grid" id="calendar-grid">
             <div class="weekday">日</div><div class="weekday">一</div><div class="weekday">二</div>
@@ -284,27 +247,25 @@
 
 <div id="modal-overlay">
     <div id="modal">
-        <h3 id="modal-title">休市详情</h3>
-        <p id="modal-desc"></p>
-        <button class="modal-btn" onclick="closeModal()">我知道了</button>
+        <h3 id="modal-title">详情</h3>
+        <p id="modal-desc" style="margin-top:10px; font-size:14px; color:#666;"></p>
+        <button class="modal-btn" onclick="closeModal()">好</button>
     </div>
 </div>
 
 <script>
-    // 离线支持
+    // 离线支持 v21
     if ('serviceWorker' in navigator) {
-        const swCode = `
-            const CACHE_NAME = 'market-v13';
-            self.addEventListener('install', (e) => {
+        const sw = `
+            const C = 'market-v21';
+            self.addEventListener('install', e => {
                 self.skipWaiting();
-                e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll([location.href])));
+                e.waitUntil(caches.open(C).then(c => c.addAll([location.href])));
             });
-            self.addEventListener('fetch', (e) => {
-                e.respondWith(caches.match(e.request).then((res) => res || fetch(e.request)));
-            });
+            self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
         `;
-        const blob = new Blob([swCode], { type: 'application/javascript' });
-        navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(console.warn);
+        const b = new Blob([sw], {type: 'application/javascript'});
+        navigator.serviceWorker.register(URL.createObjectURL(b)).catch(() => {});
     }
 
     const ICS_URLS = {
@@ -313,207 +274,214 @@
         hk: "https://ics.calendarlabs.com/581/34611917/Hkex_Market_Holidays.ics"
     };
 
-    // 基础补丁：依然保留最核心的调休定义，作为最后的防线
-    const BACKUP_HOLIDAYS = {
-        a: { "2026-05-01": "劳动节", "2026-05-04": "劳动节假期", "2026-05-05": "劳动节假期" },
-        us: { "2026-05-25": "Memorial Day" },
-        hk: { "2026-05-01": "劳动节", "2026-05-25": "佛诞" }
+    // A股核心法定假日白名单
+    const CN_HOLIDAY_WHITELIST = ["元旦", "春节", "清明", "劳动", "五一", "端午", "中秋", "国庆"];
+
+    // 核心数据修正（2026年全市场精确休市表）
+    const BACKUP = {
+        a: { 
+            "2026-01-01": { type: 'HOLIDAY', reason: "元旦" },
+            "2026-02-17": { type: 'HOLIDAY', reason: "春节" }, "2026-02-18": { type: 'HOLIDAY', reason: "春节" }, "2026-02-19": { type: 'HOLIDAY', reason: "春节" }, "2026-02-20": { type: 'HOLIDAY', reason: "春节" }, "2026-02-23": { type: 'HOLIDAY', reason: "春节" }, "2026-02-24": { type: 'HOLIDAY', reason: "春节" },
+            "2026-04-06": { type: 'HOLIDAY', reason: "清明补休" },
+            "2026-05-01": { type: 'HOLIDAY', reason: "劳动节" }, "2026-05-04": { type: 'HOLIDAY', reason: "劳动节假期" }, "2026-05-05": { type: 'HOLIDAY', reason: "劳动节假期" },
+            "2026-06-19": { type: 'HOLIDAY', reason: "端午节" },
+            "2026-09-25": { type: 'HOLIDAY', reason: "中秋节假期" }, 
+            "2026-10-01": { type: 'HOLIDAY', reason: "国庆节" }, "2026-10-02": { type: 'HOLIDAY', reason: "国庆假期" }, "2026-10-05": { type: 'HOLIDAY', reason: "国庆假期" }, "2026-10-06": { type: 'HOLIDAY', reason: "国庆假期" }, "2026-10-07": { type: 'HOLIDAY', reason: "国庆假期" }
+        },
+        us: { 
+            "2026-01-01": { type: 'HOLIDAY', reason: "New Year's Day" },
+            "2026-01-19": { type: 'HOLIDAY', reason: "MLK Day" },
+            "2026-02-16": { type: 'HOLIDAY', reason: "Presidents' Day" },
+            "2026-04-03": { type: 'HOLIDAY', reason: "Good Friday" },
+            "2026-05-25": { type: 'HOLIDAY', reason: "Memorial Day" },
+            "2026-06-19": { type: 'HOLIDAY', reason: "Juneteenth" },
+            "2026-07-03": { type: 'HOLIDAY', reason: "Independence Day Obs" },
+            "2026-09-07": { type: 'HOLIDAY', reason: "Labor Day" },
+            "2026-11-26": { type: 'HOLIDAY', reason: "Thanksgiving" },
+            "2026-12-25": { type: 'HOLIDAY', reason: "Christmas" },
+            // 半日市
+            "2026-11-27": { type: 'HALF', reason: "Early Close (1 PM)" },
+            "2026-12-24": { type: 'HALF', reason: "Early Close (1 PM)" }
+        },
+        hk: { 
+            "2026-01-01": { type: 'HOLIDAY', reason: "元旦" },
+            "2026-02-17": { type: 'HOLIDAY', reason: "农历新年" }, "2026-02-18": { type: 'HOLIDAY', reason: "农历新年" }, "2026-02-19": { type: 'HOLIDAY', reason: "农历新年" },
+            "2026-04-03": { type: 'HOLIDAY', reason: "耶稣受难节" }, "2026-04-06": { type: 'HOLIDAY', reason: "清明节补假" }, "2026-04-07": { type: 'HOLIDAY', reason: "复活节补假" },
+            "2026-05-01": { type: 'HOLIDAY', reason: "劳动节" },
+            "2026-05-25": { type: 'HOLIDAY', reason: "佛诞补假" },
+            "2026-06-19": { type: 'HOLIDAY', reason: "端午节" },
+            "2026-07-01": { type: 'HOLIDAY', reason: "香港成立纪念日" },
+            "2026-10-01": { type: 'HOLIDAY', reason: "国庆节" },
+            "2026-10-19": { type: 'HOLIDAY', reason: "重阳节补假" },
+            "2026-12-25": { type: 'HOLIDAY', reason: "圣诞节" },
+            // 半日市
+            "2026-02-16": { type: 'HALF', reason: "除夕半日" },
+            "2026-12-24": { type: 'HALF', reason: "平安夜半日" },
+            "2026-12-31": { type: 'HALF', reason: "跨年半日" }
+        }
     };
 
     let holidayMaps = { a: new Map(), us: new Map(), hk: new Map() };
     const syncStatus = document.getElementById('sync-status');
 
     function loadInitialData() {
-        Object.keys(BACKUP_HOLIDAYS).forEach(m => {
-            Object.entries(BACKUP_HOLIDAYS[m]).forEach(([d, s]) => {
-                holidayMaps[m].set(d, { status: "CLOSED", reason: s });
-            });
+        Object.keys(BACKUP).forEach(m => {
+            Object.entries(BACKUP[m]).forEach(([d, obj]) => holidayMaps[m].set(d, obj));
         });
-
         try {
-            const cached = localStorage.getItem('market_holidays_cache_v13');
+            const cached = localStorage.getItem('market_cache_v21');
             if (cached) {
-                const raw = JSON.parse(cached);
-                Object.keys(raw).forEach(m => {
-                    Object.entries(raw[m]).forEach(([d, obj]) => holidayMaps[m].set(d, obj));
+                const r = JSON.parse(cached);
+                Object.keys(r).forEach(m => {
+                    Object.entries(r[m]).forEach(([d, obj]) => holidayMaps[m].set(d, obj));
                 });
-                syncStatus.textContent = "已加载离线数据";
+                syncStatus.textContent = "已加载历史数据";
             }
         } catch(e) {}
     }
 
-    let viewYear = new Date().getFullYear();
-    let viewMonth = new Date().getMonth();
-
-    function toYMD(date) {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, '0');
-        const d = String(date.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-    }
-
-    // 智能语义识别逻辑：不再掩耳盗铃，而是“读懂”日历
     function parseICS(text, market) {
         const data = new Map();
-        const blocks = text.split('BEGIN:VEVENT');
-        
-        // 核心法定假期准入词（白名单）
-        const cnLegalKeywords = ["元旦", "春节", "清明", "劳动", "五一", "端午", "中秋", "国庆"];
+        const events = text.split('BEGIN:VEVENT');
 
-        blocks.forEach(block => {
-            const startMatch = block.match(/DTSTART(?:;VALUE=DATE)?:(\d{8})/);
-            const summaryMatch = block.match(/SUMMARY(?:;[^:]*)?:(.*)/i);
+        events.forEach(ev => {
+            const dMatch = ev.match(/DTSTART(?:;VALUE=DATE)?:(\d{8})/);
+            const sMatch = ev.match(/SUMMARY(?:;[^:]*)?:(.*)/i);
             
-            if (startMatch && summaryMatch) {
-                const d = startMatch[1];
-                const key = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`;
-                let summary = summaryMatch[1].trim();
+            if (dMatch && sMatch) {
+                const dateKey = `${dMatch[1].slice(0,4)}-${dMatch[1].slice(4,6)}-${dMatch[1].slice(6,8)}`;
+                const summary = sMatch[1].trim();
 
                 if (market === 'a') {
-                    // --- A 股专用智能过滤逻辑 ---
-                    
-                    // 1. 识别“调休上班” -> 强制开盘（优先级最高）
                     if (summary.includes("上班") || summary.includes("工作日") || summary.includes("补班")) {
-                        data.set(key, { status: "OPEN", reason: summary });
+                        data.set(dateKey, { type: 'WORK', reason: summary });
                         return;
                     }
-
-                    // 2. 法定假期判定：只有属于白名单的大节才算休市
-                    const isLegalHoliday = cnLegalKeywords.some(kw => summary.includes(kword = kw));
-                    if (isLegalHoliday) {
-                        data.set(key, { status: "CLOSED", reason: summary });
+                    if (CN_HOLIDAY_WHITELIST.some(kw => summary.includes(kw))) {
+                        data.set(dateKey, { type: 'HOLIDAY', reason: summary });
                     }
-                    // 3. 所有其他节日（七夕、小满、重阳、教师节等）会被自动忽略，默认开盘
                 } else {
-                    // --- 美股/港股逻辑：专业日历，直接信任 ---
-                    data.set(key, { status: "CLOSED", reason: summary });
+                    // 增加对港美股 ICS 中“Early Close”或“Half-day”的模糊识别
+                    if (summary.toLowerCase().includes("early close") || summary.includes("半日")) {
+                        data.set(dateKey, { type: 'HALF', reason: summary });
+                    } else {
+                        data.set(dateKey, { type: 'HOLIDAY', reason: summary });
+                    }
                 }
             }
         });
         return data;
     }
 
-    async function syncData() {
+    async function sync() {
+        let anyOk = false;
         syncStatus.textContent = "检查更新...";
-        let anySuccess = false;
-        
-        for (const [market, url] of Object.entries(ICS_URLS)) {
+        for (const [m, u] of Object.entries(ICS_URLS)) {
             try {
-                const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-                const response = await fetch(proxyUrl, { cache: "no-store" });
-                const fetched = parseICS(await response.text(), market);
-                if (fetched.size > 0) {
-                    fetched.forEach((obj, key) => holidayMaps[market].set(key, obj));
-                    anySuccess = true;
+                const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(u)}`, { cache: "no-store" });
+                const f = parseICS(await r.text(), m);
+                if (f.size > 0) {
+                    f.forEach((v, d) => holidayMaps[m].set(d, v));
+                    anyOk = true;
                 }
-            } catch (err) {}
+            } catch (e) {}
         }
-
-        if (anySuccess) {
-            const toStore = {};
-            Object.keys(holidayMaps).forEach(k => toStore[k] = Object.fromEntries(holidayMaps[k]));
-            localStorage.setItem('market_holidays_cache_v13', JSON.stringify(toStore));
-            syncStatus.textContent = `同步成功 (${new Date().toLocaleTimeString()})`;
+        if (anyOk) {
+            const st = {};
+            Object.keys(holidayMaps).forEach(k => st[k] = Object.fromEntries(holidayMaps[k]));
+            localStorage.setItem('market_cache_v21', JSON.stringify(st));
+            syncStatus.textContent = `云端同步成功 (${new Date().toLocaleTimeString()})`;
         } else {
-            syncStatus.textContent = "当前离线 (数据基于缓存)";
+            syncStatus.textContent = "离线运行中";
         }
-        renderCalendar();
+        render();
     }
 
-    function updateClocks() {
-        const now = new Date();
+    let vY = new Date().getFullYear(), vM = new Date().getMonth();
+    function update() {
+        const n = new Date();
         const o = (tz) => ({ timeZone: tz, hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        document.getElementById('cn-time').textContent = now.toLocaleTimeString('zh-CN', o('Asia/Shanghai'));
-        document.getElementById('us-time').textContent = now.toLocaleTimeString('zh-CN', o('America/New_York'));
-        const d = (tz) => now.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', timeZone: tz });
+        document.getElementById('cn-time').textContent = n.toLocaleTimeString('zh-CN', o('Asia/Shanghai'));
+        document.getElementById('us-time').textContent = n.toLocaleTimeString('zh-CN', o('America/New_York'));
+        const d = (tz) => n.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short', timeZone: tz });
         document.getElementById('cn-date').textContent = d('Asia/Shanghai');
         document.getElementById('us-date').textContent = d('America/New_York');
     }
 
-    function initControls() {
-        const yS = document.getElementById('year-select'), mS = document.getElementById('month-select'), tB = document.getElementById('today-btn');
-        for (let y = 2024; y <= 2027; y++) {
-            const o = document.createElement('option'); o.value = y; o.textContent = `${y}年`;
-            if (y === viewYear) o.selected = true; yS.appendChild(o);
-        }
-        for (let m = 0; m < 12; m++) {
-            const o = document.createElement('option'); o.value = m; o.textContent = `${m + 1}月`;
-            if (m === viewMonth) o.selected = true; mS.appendChild(o);
-        }
-        yS.onchange = (e) => { viewYear = +e.target.value; renderCalendar(); };
-        mS.onchange = (e) => { viewMonth = +e.target.value; renderCalendar(); };
-        tB.onclick = () => { const n = new Date(); viewYear = n.getFullYear(); viewMonth = n.getMonth(); yS.value = viewYear; mS.value = viewMonth; renderCalendar(); };
+    function render() {
+        const g = document.getElementById('calendar-grid');
+        while(g.children.length > 7) g.removeChild(g.lastChild);
+        const f = new Date(vY, vM, 1), l = new Date(vY, vM + 1, 0);
+        for (let i = f.getDay() - 1; i >= 0; i--) draw(g, new Date(vY, vM, 0).getDate() - i, true);
+        for (let d = 1; d <= l.getDate(); d++) draw(g, d, false, new Date(vY, vM, d));
+        const rem = 42 - (g.children.length - 7);
+        for (let i = 1; i <= rem; i++) draw(g, i, true);
     }
 
-    function renderCalendar() {
-        const grid = document.getElementById('calendar-grid');
-        while (grid.children.length > 7) grid.removeChild(grid.lastChild);
-        const f = new Date(viewYear, viewMonth, 1), l = new Date(viewYear, viewMonth + 1, 0);
-        for (let i = f.getDay() - 1; i >= 0; i--) createDayCell(grid, new Date(viewYear, viewMonth, 0).getDate() - i, true);
-        for (let d = 1; d <= l.getDate(); d++) createDayCell(grid, d, false, new Date(viewYear, viewMonth, d));
-        const rem = 42 - (grid.children.length - 7);
-        for (let i = 1; i <= rem; i++) createDayCell(grid, i, true);
-    }
+    function draw(c, n, isO, dO = null) {
+        const e = document.createElement('div');
+        e.className = 'day-cell' + (isO ? ' other-month' : '');
+        if (dO && dO.toDateString() === new Date().toDateString()) e.classList.add('today');
+        const nD = document.createElement('div'); nD.className = 'day-num'; nD.textContent = n; e.appendChild(nD);
 
-    function createDayCell(container, num, isOtherMonth, dateObj = null) {
-        const cell = document.createElement('div');
-        cell.className = 'day-cell' + (isOtherMonth ? ' other-month' : '');
-        if (dateObj && dateObj.toDateString() === new Date().toDateString()) cell.classList.add('today');
-        const nD = document.createElement('div'); nD.className = 'day-num'; nD.textContent = num; cell.appendChild(nD);
-
-        if (!isOtherMonth && dateObj) {
-            const ymd = toYMD(dateObj);
-            const isWknd = (dateObj.getDay() === 0 || dateObj.getDay() === 6);
-
+        if (!isO && dO) {
+            const ymd = `${dO.getFullYear()}-${String(dO.getMonth()+1).padStart(2,'0')}-${String(dO.getDate()).padStart(2,'0')}`;
+            const isWknd = (dO.getDay() === 0 || dO.getDay() === 6);
             ['a', 'hk', 'us'].forEach(m => {
-                const record = holidayMaps[m].get(ymd);
+                const rec = holidayMaps[m].get(ymd);
                 const marketName = {a:'A股', hk:'港股', us:'美股'}[m];
                 const tagClass = {a:'tag-a', hk:'tag-h', us:'tag-u'}[m];
                 
-                let isOpen = !isWknd;
-                let reason = isWknd ? "周末休市" : "";
-
-                if (record) {
-                    if (record.status === "OPEN") {
-                        isOpen = true; // 强制开盘（调休补班）
-                        reason = "";
-                    } else {
-                        isOpen = false; // 法定休市
-                        reason = record.reason;
-                    }
+                let isOpen = !isWknd, isHalf = false, reason = isWknd ? "周末休市" : "";
+                if (rec) {
+                    if (rec.type === 'WORK') { isOpen = true; reason = ""; }
+                    else if (rec.type === 'HALF') { isOpen = true; isHalf = true; reason = rec.reason; }
+                    else { isOpen = false; reason = rec.reason; }
                 }
-                addMarketTag(cell, marketName, isOpen, tagClass, ymd, reason);
+                addTag(e, marketName, isOpen, isHalf ? 'tag-half' : tagClass, ymd, reason, isHalf);
             });
         }
-        container.appendChild(cell);
+        c.appendChild(e);
     }
 
-    function addMarketTag(p, n, isOpen, c, d, r) {
-        const tag = document.createElement('div');
-        tag.className = `market-tag ${isOpen ? c : 'tag-closed'}`;
-        tag.textContent = `${n}${isOpen ? '开盘' : '休市'}`;
-        if (!isOpen) {
+    function addTag(p, n, o, c, d, r, isHalf) {
+        const t = document.createElement('div');
+        t.className = `market-tag ${o ? c : 'tag-closed'}`;
+        t.textContent = `${n}${o ? (isHalf ? '半日' : '开盘') : '休市'}`;
+        if (!o || isHalf) {
             const i = document.createElement('span'); i.className = 'info-icon'; i.textContent = '?';
-            i.onclick = (e) => { e.stopPropagation(); openModal(`${n} ${d}`, r || "休市"); };
-            tag.appendChild(i);
+            i.onclick = (e) => { e.stopPropagation(); openModal(`${n} ${d}`, r); };
+            t.appendChild(i);
         }
-        p.appendChild(tag);
+        p.appendChild(t);
     }
 
     function openModal(t, d) {
         document.getElementById('modal-title').textContent = t;
-        document.getElementById('modal-desc').textContent = d;
+        document.getElementById('modal-desc').textContent = d || "法定交易安排";
         document.getElementById('modal-overlay').style.display = 'flex';
     }
     function closeModal() { document.getElementById('modal-overlay').style.display = 'none'; }
     window.onclick = e => { if (e.target == document.getElementById('modal-overlay')) closeModal(); };
 
+    const yS = document.getElementById('year-select'), mS = document.getElementById('month-select'), tB = document.getElementById('today-btn');
+    for (let y = 2024; y <= 2027; y++) {
+        const o = document.createElement('option'); o.value = y; o.textContent = y+'年';
+        if(y===vY) o.selected=true; yS.appendChild(o);
+    }
+    for (let m = 0; m < 12; m++) {
+        const o = document.createElement('option'); o.value = m; o.textContent = (m+1)+'月';
+        if(m===vM) o.selected=true; mS.appendChild(o);
+    }
+    yS.onchange = (e) => { vY = +e.target.value; render(); };
+    mS.onchange = (e) => { vM = +e.target.value; render(); };
+    tB.onclick = () => { const n=new Date(); vY=n.getFullYear(); vM=n.getMonth(); yS.value=vY; mS.value=vM; render(); };
+
     loadInitialData();
-    initControls();
-    updateClocks();
-    renderCalendar();
-    setInterval(updateClocks, 1000);
-    syncData();
+    update();
+    render();
+    setInterval(update, 1000);
+    sync();
 </script>
 
 </body>
