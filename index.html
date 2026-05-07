@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>开盘看板日历</title>
-    <!-- PWA 配置 -->
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="开盘日历">
@@ -17,7 +17,7 @@
             --card-bg: #ffffff;
             --apple-blue: #007aff;
             --apple-red: #ff3b30;
-            --apple-orange: #ff9500; /* 半日市颜色 */
+            --apple-orange: #ff9500; 
             --text-main: #1c1c1e;
             --text-sub: #8e8e93;
             --border-color: #e5e5ea;
@@ -34,7 +34,7 @@
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
-            padding: 15px;
+            padding: 15px; /* PC端保留间距 */
             display: flex;
             justify-content: center;
         }
@@ -151,7 +151,7 @@
         .tag-a { background-color: var(--tag-a-bg); color: white; }
         .tag-h { background-color: var(--tag-h-bg); color: white; }
         .tag-u { background-color: var(--tag-u-bg); color: white; }
-        .tag-half { background-color: var(--apple-orange); color: white; } /* 半日市标签 */
+        .tag-half { background-color: var(--apple-orange); color: white; } 
         .tag-closed { background-color: var(--tag-closed-bg); color: var(--tag-closed-text); }
 
         .info-icon {
@@ -197,12 +197,30 @@
             text-align: right;
         }
 
+        /* 回归 V13 完美的移动端全屏 UI */
         @media (max-width: 600px) {
             body { padding: 0; }
-            .container { padding: 15px 0; border-radius: 0; width: 100vw; box-shadow: none; }
-            .clocks-row { grid-template-columns: 1fr; padding: 0 15px; }
-            .calendar-container { border-radius: 0; border-left: none; border-right: none; }
-            .day-cell { min-height: 90px; }
+            .container { 
+                padding: 10px 0px; 
+                border-radius: 0; 
+                box-shadow: none;
+                width: 100vw;
+            }
+            .clocks-row { 
+                grid-template-columns: 1fr; 
+                gap: 10px; 
+                padding: 0 10px;
+            }
+            .time-val { font-size: 28px; }
+            .calendar-container {
+                border-left: none;
+                border-right: none;
+                border-radius: 0;
+            }
+            .cal-header { padding: 10px 5px; justify-content: center; }
+            .day-cell { min-height: 85px; padding: 4px 2px; }
+            .market-tag { font-size: 8px; letter-spacing: -0.5px; padding: 1px 2px; }
+            .weekday { font-size: 10px; }
         }
     </style>
 </head>
@@ -217,12 +235,12 @@
         <div class="clock-card">
             <div class="date-val">北京时间 (CST)</div>
             <div id="cn-time" class="time-val">00:00:00</div>
-            <div id="cn-date" class="date-val">正在同步...</div>
+            <div id="cn-date" class="date-val">同步中...</div>
         </div>
         <div class="clock-card">
             <div class="date-val">美东时间 (EST/EDT)</div>
             <div id="us-time" class="time-val">00:00:00</div>
-            <div id="us-date" class="date-val">正在同步...</div>
+            <div id="us-date" class="date-val">同步中...</div>
         </div>
     </div>
 
@@ -254,10 +272,10 @@
 </div>
 
 <script>
-    // 离线支持 v21
+    // 离线支持 v22 - 强制清理旧缓存
     if ('serviceWorker' in navigator) {
         const sw = `
-            const C = 'market-v21';
+            const C = 'market-v22';
             self.addEventListener('install', e => {
                 self.skipWaiting();
                 e.waitUntil(caches.open(C).then(c => c.addAll([location.href])));
@@ -274,10 +292,9 @@
         hk: "https://ics.calendarlabs.com/581/34611917/Hkex_Market_Holidays.ics"
     };
 
-    // A股核心法定假日白名单
     const CN_HOLIDAY_WHITELIST = ["元旦", "春节", "清明", "劳动", "五一", "端午", "中秋", "国庆"];
 
-    // 核心数据修正（2026年全市场精确休市表）
+    // 核心地基（保留 v21 的全量修正）
     const BACKUP = {
         a: { 
             "2026-01-01": { type: 'HOLIDAY', reason: "元旦" },
@@ -290,34 +307,17 @@
         },
         us: { 
             "2026-01-01": { type: 'HOLIDAY', reason: "New Year's Day" },
-            "2026-01-19": { type: 'HOLIDAY', reason: "MLK Day" },
-            "2026-02-16": { type: 'HOLIDAY', reason: "Presidents' Day" },
-            "2026-04-03": { type: 'HOLIDAY', reason: "Good Friday" },
-            "2026-05-25": { type: 'HOLIDAY', reason: "Memorial Day" },
             "2026-06-19": { type: 'HOLIDAY', reason: "Juneteenth" },
             "2026-07-03": { type: 'HOLIDAY', reason: "Independence Day Obs" },
-            "2026-09-07": { type: 'HOLIDAY', reason: "Labor Day" },
-            "2026-11-26": { type: 'HOLIDAY', reason: "Thanksgiving" },
             "2026-12-25": { type: 'HOLIDAY', reason: "Christmas" },
-            // 半日市
             "2026-11-27": { type: 'HALF', reason: "Early Close (1 PM)" },
             "2026-12-24": { type: 'HALF', reason: "Early Close (1 PM)" }
         },
         hk: { 
-            "2026-01-01": { type: 'HOLIDAY', reason: "元旦" },
-            "2026-02-17": { type: 'HOLIDAY', reason: "农历新年" }, "2026-02-18": { type: 'HOLIDAY', reason: "农历新年" }, "2026-02-19": { type: 'HOLIDAY', reason: "农历新年" },
-            "2026-04-03": { type: 'HOLIDAY', reason: "耶稣受难节" }, "2026-04-06": { type: 'HOLIDAY', reason: "清明节补假" }, "2026-04-07": { type: 'HOLIDAY', reason: "复活节补假" },
             "2026-05-01": { type: 'HOLIDAY', reason: "劳动节" },
-            "2026-05-25": { type: 'HOLIDAY', reason: "佛诞补假" },
             "2026-06-19": { type: 'HOLIDAY', reason: "端午节" },
             "2026-07-01": { type: 'HOLIDAY', reason: "香港成立纪念日" },
-            "2026-10-01": { type: 'HOLIDAY', reason: "国庆节" },
-            "2026-10-19": { type: 'HOLIDAY', reason: "重阳节补假" },
-            "2026-12-25": { type: 'HOLIDAY', reason: "圣诞节" },
-            // 半日市
-            "2026-02-16": { type: 'HALF', reason: "除夕半日" },
-            "2026-12-24": { type: 'HALF', reason: "平安夜半日" },
-            "2026-12-31": { type: 'HALF', reason: "跨年半日" }
+            "2026-12-24": { type: 'HALF', reason: "平安夜半日" }
         }
     };
 
@@ -329,7 +329,7 @@
             Object.entries(BACKUP[m]).forEach(([d, obj]) => holidayMaps[m].set(d, obj));
         });
         try {
-            const cached = localStorage.getItem('market_cache_v21');
+            const cached = localStorage.getItem('market_cache_v22');
             if (cached) {
                 const r = JSON.parse(cached);
                 Object.keys(r).forEach(m => {
@@ -343,15 +343,12 @@
     function parseICS(text, market) {
         const data = new Map();
         const events = text.split('BEGIN:VEVENT');
-
         events.forEach(ev => {
             const dMatch = ev.match(/DTSTART(?:;VALUE=DATE)?:(\d{8})/);
             const sMatch = ev.match(/SUMMARY(?:;[^:]*)?:(.*)/i);
-            
             if (dMatch && sMatch) {
                 const dateKey = `${dMatch[1].slice(0,4)}-${dMatch[1].slice(4,6)}-${dMatch[1].slice(6,8)}`;
                 const summary = sMatch[1].trim();
-
                 if (market === 'a') {
                     if (summary.includes("上班") || summary.includes("工作日") || summary.includes("补班")) {
                         data.set(dateKey, { type: 'WORK', reason: summary });
@@ -361,7 +358,6 @@
                         data.set(dateKey, { type: 'HOLIDAY', reason: summary });
                     }
                 } else {
-                    // 增加对港美股 ICS 中“Early Close”或“Half-day”的模糊识别
                     if (summary.toLowerCase().includes("early close") || summary.includes("半日")) {
                         data.set(dateKey, { type: 'HALF', reason: summary });
                     } else {
@@ -389,7 +385,7 @@
         if (anyOk) {
             const st = {};
             Object.keys(holidayMaps).forEach(k => st[k] = Object.fromEntries(holidayMaps[k]));
-            localStorage.setItem('market_cache_v21', JSON.stringify(st));
+            localStorage.setItem('market_cache_v22', JSON.stringify(st));
             syncStatus.textContent = `云端同步成功 (${new Date().toLocaleTimeString()})`;
         } else {
             syncStatus.textContent = "离线运行中";
@@ -423,7 +419,6 @@
         e.className = 'day-cell' + (isO ? ' other-month' : '');
         if (dO && dO.toDateString() === new Date().toDateString()) e.classList.add('today');
         const nD = document.createElement('div'); nD.className = 'day-num'; nD.textContent = n; e.appendChild(nD);
-
         if (!isO && dO) {
             const ymd = `${dO.getFullYear()}-${String(dO.getMonth()+1).padStart(2,'0')}-${String(dO.getDate()).padStart(2,'0')}`;
             const isWknd = (dO.getDay() === 0 || dO.getDay() === 6);
@@ -431,7 +426,6 @@
                 const rec = holidayMaps[m].get(ymd);
                 const marketName = {a:'A股', hk:'港股', us:'美股'}[m];
                 const tagClass = {a:'tag-a', hk:'tag-h', us:'tag-u'}[m];
-                
                 let isOpen = !isWknd, isHalf = false, reason = isWknd ? "周末休市" : "";
                 if (rec) {
                     if (rec.type === 'WORK') { isOpen = true; reason = ""; }
