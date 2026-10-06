@@ -126,6 +126,7 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
+            position: relative; /* 13F定位锚点 */
         }
         .day-num { font-size: 14px; font-weight: 600; }
         .today .day-num {
@@ -137,6 +138,7 @@
         }
         .other-month { color: #d1d1d6; }
         .other-month .market-tag { opacity: 0.2; }
+        .other-month .f13-badge { opacity: 0.2; }
 
         .market-tag {
             font-size: 9px;
@@ -153,6 +155,25 @@
         .tag-u { background-color: var(--tag-u-bg); color: white; }
         .tag-half { background-color: var(--apple-orange); color: white; } 
         .tag-closed { background-color: var(--tag-closed-bg); color: var(--tag-closed-text); }
+
+        /* 13F标记样式 - 修改为亮橙色 */
+        .f13-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background-color: var(--apple-orange); 
+            color: #fff;
+            font-size: 8px;
+            font-weight: bold;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+            z-index: 2;
+        }
 
         .info-icon {
             display: inline-flex;
@@ -197,7 +218,7 @@
             text-align: right;
         }
 
-        /* 回归 V13 完美的移动端全屏 UI */
+        /* 移动端适配 */
         @media (max-width: 600px) {
             body { padding: 0; }
             .container { 
@@ -221,6 +242,13 @@
             .day-cell { min-height: 85px; padding: 4px 2px; }
             .market-tag { font-size: 8px; letter-spacing: -0.5px; padding: 1px 2px; }
             .weekday { font-size: 10px; }
+            .f13-badge {
+                top: 2px;
+                right: 2px;
+                width: 15px;
+                height: 15px;
+                font-size: 7px;
+            }
         }
     </style>
 </head>
@@ -251,7 +279,7 @@
                 <select id="month-select" class="cal-select"></select>
                 <button id="today-btn" class="cal-btn">今天</button>
             </div>
-            <div style="font-size: 11px; color: var(--text-sub);">橙色表示提前收盘</div>
+            <div style="font-size: 11px; color: var(--text-sub);">橙色表示提前收盘 / 右上角橙圈为13F</div>
         </div>
         <div class="cal-grid" id="calendar-grid">
             <div class="weekday">日</div><div class="weekday">一</div><div class="weekday">二</div>
@@ -261,6 +289,8 @@
     </div>
 
     <div class="sync-info" id="sync-status">初始化中...</div>
+    <div class="sync-info" id="official-data-date" style="margin-top: 4px;">官方数据范围: 分析中...</div>
+    <div class="sync-info" id="predict-data-date" style="margin-top: 2px;">预估数据范围: 分析中...</div>
 </div>
 
 <div id="modal-overlay">
@@ -272,10 +302,10 @@
 </div>
 
 <script>
-    // 离线支持 v22 - 强制清理旧缓存
+    // 离线支持 v29 - 强制清理旧缓存
     if ('serviceWorker' in navigator) {
         const sw = `
-            const C = 'market-v22';
+            const C = 'market-v29';
             self.addEventListener('install', e => {
                 self.skipWaiting();
                 e.waitUntil(caches.open(C).then(c => c.addAll([location.href])));
@@ -294,7 +324,7 @@
 
     const CN_HOLIDAY_WHITELIST = ["元旦", "春节", "清明", "劳动", "五一", "端午", "中秋", "国庆"];
 
-    // 核心地基（保留 v21 的全量修正）
+    // 核心地基数据（包含27年预测数据打底）
     const BACKUP = {
         a: { 
             "2026-01-01": { type: 'HOLIDAY', reason: "元旦" },
@@ -303,7 +333,15 @@
             "2026-05-01": { type: 'HOLIDAY', reason: "劳动节" }, "2026-05-04": { type: 'HOLIDAY', reason: "劳动节假期" }, "2026-05-05": { type: 'HOLIDAY', reason: "劳动节假期" },
             "2026-06-19": { type: 'HOLIDAY', reason: "端午节" },
             "2026-09-25": { type: 'HOLIDAY', reason: "中秋节假期" }, 
-            "2026-10-01": { type: 'HOLIDAY', reason: "国庆节" }, "2026-10-02": { type: 'HOLIDAY', reason: "国庆假期" }, "2026-10-05": { type: 'HOLIDAY', reason: "国庆假期" }, "2026-10-06": { type: 'HOLIDAY', reason: "国庆假期" }, "2026-10-07": { type: 'HOLIDAY', reason: "国庆假期" }
+            "2026-10-01": { type: 'HOLIDAY', reason: "国庆节" }, "2026-10-02": { type: 'HOLIDAY', reason: "国庆假期" }, "2026-10-05": { type: 'HOLIDAY', reason: "国庆假期" }, "2026-10-06": { type: 'HOLIDAY', reason: "国庆假期" }, "2026-10-07": { type: 'HOLIDAY', reason: "国庆假期" },
+            // 2027 年A股预测补充 (一旦在线ICS更新，会自动覆盖这些数据)
+            "2027-01-01": { type: 'HOLIDAY', reason: "元旦" },
+            "2027-02-08": { type: 'HOLIDAY', reason: "春节" }, "2027-02-09": { type: 'HOLIDAY', reason: "春节" }, "2027-02-10": { type: 'HOLIDAY', reason: "春节" }, "2027-02-11": { type: 'HOLIDAY', reason: "春节" }, "2027-02-12": { type: 'HOLIDAY', reason: "春节" },
+            "2027-04-05": { type: 'HOLIDAY', reason: "清明节" },
+            "2027-05-03": { type: 'HOLIDAY', reason: "劳动节" }, "2027-05-04": { type: 'HOLIDAY', reason: "劳动节" }, "2027-05-05": { type: 'HOLIDAY', reason: "劳动节" },
+            "2027-06-09": { type: 'HOLIDAY', reason: "端午节" },
+            "2027-09-15": { type: 'HOLIDAY', reason: "中秋节" },
+            "2027-10-01": { type: 'HOLIDAY', reason: "国庆节" }, "2027-10-04": { type: 'HOLIDAY', reason: "国庆假期" }, "2027-10-05": { type: 'HOLIDAY', reason: "国庆假期" }, "2027-10-06": { type: 'HOLIDAY', reason: "国庆假期" }, "2027-10-07": { type: 'HOLIDAY', reason: "国庆假期" }
         },
         us: { 
             "2026-01-01": { type: 'HOLIDAY', reason: "New Year's Day" },
@@ -311,33 +349,113 @@
             "2026-07-03": { type: 'HOLIDAY', reason: "Independence Day Obs" },
             "2026-12-25": { type: 'HOLIDAY', reason: "Christmas" },
             "2026-11-27": { type: 'HALF', reason: "Early Close (1 PM)" },
-            "2026-12-24": { type: 'HALF', reason: "Early Close (1 PM)" }
+            "2026-12-24": { type: 'HALF', reason: "Early Close (1 PM)" },
+            // 2027 年美股标准补充
+            "2027-01-01": { type: 'HOLIDAY', reason: "New Year's Day" },
+            "2027-01-18": { type: 'HOLIDAY', reason: "Martin Luther King Jr. Day" },
+            "2027-02-15": { type: 'HOLIDAY', reason: "Washington's Birthday" },
+            "2027-03-26": { type: 'HOLIDAY', reason: "Good Friday" },
+            "2027-05-31": { type: 'HOLIDAY', reason: "Memorial Day" },
+            "2027-06-18": { type: 'HOLIDAY', reason: "Juneteenth (Observed)" },
+            "2027-07-05": { type: 'HOLIDAY', reason: "Independence Day (Observed)" },
+            "2027-09-06": { type: 'HOLIDAY', reason: "Labor Day" },
+            "2027-11-25": { type: 'HOLIDAY', reason: "Thanksgiving Day" },
+            "2027-11-26": { type: 'HALF', reason: "Early Close (1 PM)" },
+            "2027-12-24": { type: 'HOLIDAY', reason: "Christmas (Observed)" }
         },
         hk: { 
             "2026-05-01": { type: 'HOLIDAY', reason: "劳动节" },
             "2026-06-19": { type: 'HOLIDAY', reason: "端午节" },
             "2026-07-01": { type: 'HOLIDAY', reason: "香港成立纪念日" },
-            "2026-12-24": { type: 'HALF', reason: "平安夜半日" }
+            "2026-12-24": { type: 'HALF', reason: "平安夜半日" },
+            // 2027 年港股标准补充
+            "2027-01-01": { type: 'HOLIDAY', reason: "元旦" },
+            "2027-02-08": { type: 'HOLIDAY', reason: "农历年初三" }, "2027-02-09": { type: 'HOLIDAY', reason: "农历年初四" }, "2027-02-10": { type: 'HOLIDAY', reason: "农历年初五" },
+            "2027-03-26": { type: 'HOLIDAY', reason: "耶稣受难节" },
+            "2027-03-29": { type: 'HOLIDAY', reason: "复活节星期一" },
+            "2027-04-05": { type: 'HOLIDAY', reason: "清明节" },
+            "2027-05-13": { type: 'HOLIDAY', reason: "佛诞" },
+            "2027-06-09": { type: 'HOLIDAY', reason: "端午节" },
+            "2027-07-01": { type: 'HOLIDAY', reason: "香港特别行政区成立纪念日" },
+            "2027-09-16": { type: 'HOLIDAY', reason: "中秋节翌日" },
+            "2027-10-01": { type: 'HOLIDAY', reason: "国庆日" },
+            "2027-10-08": { type: 'HOLIDAY', reason: "重阳节" },
+            "2027-12-24": { type: 'HALF', reason: "平安夜半日" },
+            "2027-12-27": { type: 'HOLIDAY', reason: "圣诞节后第一个周日" }
         }
     };
+
+    // 13F机构持仓公布截止日（季度结束后45天，遇节假日顺延）
+    const F13_DATES = [
+        "2024-02-14", "2024-05-15", "2024-08-14", "2024-11-14",
+        "2025-02-14", "2025-05-15", "2025-08-14", "2025-11-14",
+        "2026-02-17", "2026-05-15", "2026-08-14", "2026-11-16",
+        "2027-02-16", "2027-05-17", "2027-08-16", "2027-11-15"
+    ];
 
     let holidayMaps = { a: new Map(), us: new Map(), hk: new Map() };
     const syncStatus = document.getElementById('sync-status');
 
+    function updateDataDateUI() {
+        let minSync = "9999-99-99", maxSync = "";
+        let minPred = "9999-99-99", maxPred = "";
+
+        // 1. 寻找从官方源抓取(sync)的最小和最大日期边界
+        ['a', 'us', 'hk'].forEach(m => {
+            for (let [d, obj] of holidayMaps[m].entries()) {
+                if (obj.source === 'sync') {
+                    if (d < minSync) minSync = d;
+                    if (d > maxSync) maxSync = d;
+                }
+            }
+        });
+
+        // 2. 寻找超过官方源最大日期之后的硬编码预估(backup)日期范围
+        ['a', 'us', 'hk'].forEach(m => {
+            for (let [d, obj] of holidayMaps[m].entries()) {
+                if (obj.source !== 'sync' && d > maxSync) {
+                    if (d < minPred) minPred = d;
+                    if (d > maxPred) maxPred = d;
+                }
+            }
+        });
+
+        const offEl = document.getElementById('official-data-date');
+        const predEl = document.getElementById('predict-data-date');
+
+        if (maxSync !== "") {
+            offEl.textContent = `官方数据已同步: ${minSync} 至 ${maxSync}`;
+            offEl.style.color = "var(--tag-u-bg)"; // 用绿色表示可靠
+        } else {
+            offEl.textContent = `官方数据: 暂未同步或处于离线模式`;
+            offEl.style.color = "var(--text-sub)";
+        }
+
+        if (maxPred !== "" && minPred !== "9999-99-99") {
+            predEl.textContent = `预估排期段(仅供参考): ${minPred} 至 ${maxPred}`;
+            predEl.style.color = "var(--apple-orange)"; // 用橙色警示是预测的
+            predEl.style.display = 'block';
+        } else {
+            predEl.style.display = 'none'; // 如果官方数据已经覆盖了所有年份，自动隐藏预估栏
+        }
+    }
+
     function loadInitialData() {
         Object.keys(BACKUP).forEach(m => {
-            Object.entries(BACKUP[m]).forEach(([d, obj]) => holidayMaps[m].set(d, obj));
+            // 给兜底预测数据打上 backup 标签
+            Object.entries(BACKUP[m]).forEach(([d, obj]) => holidayMaps[m].set(d, { ...obj, source: 'backup' }));
         });
         try {
-            const cached = localStorage.getItem('market_cache_v22');
+            const cached = localStorage.getItem('market_cache_v28'); // 对应v28
             if (cached) {
                 const r = JSON.parse(cached);
                 Object.keys(r).forEach(m => {
                     Object.entries(r[m]).forEach(([d, obj]) => holidayMaps[m].set(d, obj));
                 });
-                syncStatus.textContent = "已加载历史数据";
+                syncStatus.textContent = "已加载历史缓存数据";
             }
         } catch(e) {}
+        updateDataDateUI();
     }
 
     function parseICS(text, market) {
@@ -349,19 +467,20 @@
             if (dMatch && sMatch) {
                 const dateKey = `${dMatch[1].slice(0,4)}-${dMatch[1].slice(4,6)}-${dMatch[1].slice(6,8)}`;
                 const summary = sMatch[1].trim();
+                // 在这里给所有从ICS解析出来的数据打上 sync 官方标签
                 if (market === 'a') {
                     if (summary.includes("上班") || summary.includes("工作日") || summary.includes("补班")) {
-                        data.set(dateKey, { type: 'WORK', reason: summary });
+                        data.set(dateKey, { type: 'WORK', reason: summary, source: 'sync' });
                         return;
                     }
                     if (CN_HOLIDAY_WHITELIST.some(kw => summary.includes(kw))) {
-                        data.set(dateKey, { type: 'HOLIDAY', reason: summary });
+                        data.set(dateKey, { type: 'HOLIDAY', reason: summary, source: 'sync' });
                     }
                 } else {
                     if (summary.toLowerCase().includes("early close") || summary.includes("半日")) {
-                        data.set(dateKey, { type: 'HALF', reason: summary });
+                        data.set(dateKey, { type: 'HALF', reason: summary, source: 'sync' });
                     } else {
-                        data.set(dateKey, { type: 'HOLIDAY', reason: summary });
+                        data.set(dateKey, { type: 'HOLIDAY', reason: summary, source: 'sync' });
                     }
                 }
             }
@@ -373,23 +492,53 @@
         let anyOk = false;
         syncStatus.textContent = "检查更新...";
         for (const [m, u] of Object.entries(ICS_URLS)) {
+            let fetchSuccess = false;
+            let icsText = "";
+
+            // 策略一：优先尝试直接请求原始源
             try {
-                const r = await fetch(`https://corsproxy.io/?${encodeURIComponent(u)}`, { cache: "no-store" });
-                const f = parseICS(await r.text(), m);
+                const r = await fetch(u, { cache: "no-store" });
+                if (r.ok) {
+                    icsText = await r.text();
+                    fetchSuccess = true;
+                }
+            } catch (directError) {
+                console.log(`[${m}] 直连失败，准备使用代理兜底:`, directError);
+            }
+
+            // 策略二：如果直连失败，使用 AllOrigins 代理兜底
+            if (!fetchSuccess) {
+                try {
+                    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`;
+                    const r = await fetch(proxyUrl, { cache: "no-store" });
+                    if (r.ok) {
+                        icsText = await r.text();
+                        fetchSuccess = true;
+                    }
+                } catch (proxyError) {
+                    console.error(`[${m}] 代理兜底也失败了:`, proxyError);
+                }
+            }
+
+            // 解析获取到的内容
+            if (fetchSuccess && icsText) {
+                const f = parseICS(icsText, m);
                 if (f.size > 0) {
                     f.forEach((v, d) => holidayMaps[m].set(d, v));
                     anyOk = true;
                 }
-            } catch (e) {}
+            }
         }
+
         if (anyOk) {
             const st = {};
             Object.keys(holidayMaps).forEach(k => st[k] = Object.fromEntries(holidayMaps[k]));
-            localStorage.setItem('market_cache_v22', JSON.stringify(st));
+            localStorage.setItem('market_cache_v29', JSON.stringify(st));
             syncStatus.textContent = `云端同步成功 (${new Date().toLocaleTimeString()})`;
         } else {
-            syncStatus.textContent = "离线运行中";
+            syncStatus.textContent = "离线运行中 (直连与代理均无法访问)";
         }
+        updateDataDateUI();
         render();
     }
 
@@ -418,9 +567,21 @@
         const e = document.createElement('div');
         e.className = 'day-cell' + (isO ? ' other-month' : '');
         if (dO && dO.toDateString() === new Date().toDateString()) e.classList.add('today');
+        
         const nD = document.createElement('div'); nD.className = 'day-num'; nD.textContent = n; e.appendChild(nD);
+        
         if (!isO && dO) {
             const ymd = `${dO.getFullYear()}-${String(dO.getMonth()+1).padStart(2,'0')}-${String(dO.getDate()).padStart(2,'0')}`;
+            
+            // 渲染13F标记
+            if (F13_DATES.includes(ymd)) {
+                const f13 = document.createElement('div');
+                f13.className = 'f13-badge';
+                f13.textContent = '13F';
+                f13.onclick = (ev) => { ev.stopPropagation(); openModal(`美股13F公布截止日`, `机构须在${ymd}收盘前披露最新持仓数据`); };
+                e.appendChild(f13);
+            }
+
             const isWknd = (dO.getDay() === 0 || dO.getDay() === 6);
             ['a', 'hk', 'us'].forEach(m => {
                 const rec = holidayMaps[m].get(ymd);
@@ -478,5 +639,43 @@
     sync();
 </script>
 
+<!-- 
+    版本号: v29
+
+    【关于日历获取与范围显示的逻辑说明】
+    1. 底层数据双重来源：
+       - `BACKUP`：包含当前部分已知节假日以及2027年及以后的【预估/硬编码】节假日，标记为 source: 'backup'。
+       - `ICS_URLS`：苹果iCloud日历与CalendarLabs等第三方订阅源。
+    
+    2. 自动纠错机制：
+       - 页面加载时优先加载 `BACKUP`。
+       - 随后异步 fetch ICS文件解析最新数据，由于 Map() 键值对的特性，新解析到的正确日期会强制覆盖掉同一日期的预估错误数据。
+
+    3. 数据范围可视化判定：
+       - 系统会全盘扫描所有抓取到的日期，找出所有带有 source: 'sync' 的最大日期，判定为【官方最新收录边界】。
+       - 所有晚于该边界的、来源为 'backup' 的数据，均被判定并展示在【预估排期段(仅供参考)】中。
+       - 一旦将来官方发布2027年排期并同步至服务器，'sync'的边界会自动扩大至2027年底，同时“预估排期段”将自动消失。
+
+    ========================================================
+    【数据源（ICS订阅源）详细说明 - 测试指南】
+    您可以直接复制以下测试链接到浏览器地址栏，按回车。如果浏览器自动下载了一个 .ics 文件，说明该数据源目前是正常的、可用的。
+    （注：代码中为了解决跨域拦截，使用了 https://api.allorigins.win/raw?url=... 作为代理中转来抓取这些链接）
+
+    1. A股 (中国大陆法定节假日)
+       - 数据提供方：苹果官方 (iCloud Calendar)
+       - 获取内容：精准的中国大陆法定节假日与周末调休补班日。只要国务院发文，苹果通常会很快更新。
+       - 直连测试链接：https://calendars.icloud.com/holidays/cn_zh.ics
+
+    2. 美股 (NYSE 纽约证券交易所)
+       - 数据提供方：CalendarLabs (全球公共日历数据提供商)
+       - 获取内容：美股官方公布的休市日期以及感恩节、平安夜等提前闭市（半日市）的排期。
+       - 直连测试链接：https://ics.calendarlabs.com/577/69d4aaa8/Nyse_Market_Holidays.ics
+
+    3. 港股 (HKEX 香港交易所)
+       - 数据提供方：CalendarLabs
+       - 获取内容：港交所官方公布的香港公众假期休市，以及平安夜、除夕等半日市的排期。
+       - 直连测试链接：https://ics.calendarlabs.com/581/34611917/Hkex_Market_Holidays.ics
+    ========================================================
+-->
 </body>
 </html>
