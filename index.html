@@ -302,10 +302,10 @@
 </div>
 
 <script>
-    // 离线支持 v29 - 强制清理旧缓存
+    // 离线支持 v30 - 强制清理旧缓存
     if ('serviceWorker' in navigator) {
         const sw = `
-            const C = 'market-v29';
+            const C = 'market-v30';
             self.addEventListener('install', e => {
                 self.skipWaiting();
                 e.waitUntil(caches.open(C).then(c => c.addAll([location.href])));
